@@ -5,7 +5,8 @@
  */
 namespace ConfigServer;
 
-use ConfigServer\Clients\GuzzleClient;
+use ConfigServer\Clients\CurlClient;
+use ConfigServer\Clients\CurlResponse;
 use ConfigServer\Models\Information;
 use ConfigServer\Models\Licenses\Licenses;
 use ConfigServer\Models\Products\Products;
@@ -38,7 +39,7 @@ class ConfigServerAPIClient
     public static $instance;
 
     /**
-     * @var \ConfigServer\Clients\GuzzleClient
+     * @var \ConfigServer\Clients\CurlClient
      */
     protected $httpClient;
 
@@ -53,7 +54,7 @@ class ConfigServerAPIClient
         $this->apiToken = $apiToken;
         $this->baseUrl = $baseUrl;
         $this->userAgent = $userAgent;
-        $this->httpClient = new GuzzleClient($this);
+        $this->httpClient = new CurlClient($this);
         self::$instance = $this;
     }
 
@@ -90,21 +91,21 @@ class ConfigServerAPIClient
     }
 
     /**
-     * @param ResponseInterface $response
+     * @param CurlResponse $response
      * @return mixed|string
      * @throws APIException
      */
-    public static function checkResponse(ResponseInterface $response)
+    public static function checkResponse(CurlResponse $response)
     {
         if ($response->getStatusCode() == 401) {
             throw new APIException(APIResponse::create(['error' => 'Invalid access token.']), 'Invalid access token.');
         }
-        $body = $response->getBody()->getContents();
+        $body = $response->getResponse();
         if (strlen($body) <= 0) {
             throw new APIException(APIResponse::create(['response' => $response]), 'The response is not parseable.');
         }
         try {
-            $body = \GuzzleHttp\json_decode($body);
+            $body = \json_decode($body);
         } catch (\InvalidArgumentException $e) {
             print_R($body);
             throw new APIException(APIResponse::create(['response' => $response]), 'The response is not parseable.');

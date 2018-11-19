@@ -330,6 +330,11 @@ function ConfigServer_AdminServicesTabFields(array $params)
             $t('LicenseInfo') => 'Failed to process: ' . $e->getMessage(),
         ];
     }
+    if(!$license){
+        return [
+            $t('LicenseInfo') => 'No info was found for this license.',
+        ];
+    }
     try {
         $product = $license->product();
         return [

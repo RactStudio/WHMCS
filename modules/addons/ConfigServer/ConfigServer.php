@@ -12,7 +12,7 @@ function ConfigServer_config()
     $configArray = array(
         "name" => "ConfigServer",
         "description" => "ConfigServer License Management module",
-        "version" => '1.0',
+        "version" => '1.0.1',
         "author" => "Amirhossein Matini",
         "language" => "english",
         "fields" => []
@@ -83,9 +83,28 @@ function ConfigServer_activate()
     }
 }
 
+
 function ConfigServer_deactivate()
 {
 
+}
+
+function ConfigServer_upgrade($vars)
+{
+    if($vars['version'] < 101){
+        $products = Capsule::table('tblproducts')->where('servertype', 'ConfigServer')->get();
+        foreach ($products as $product) {
+            $customFields = Capsule::table('tblcustomfields')->where('type', 'product')->where('relid', $product->id)->get();
+            foreach($customFields as $customField){
+                $lowerFieldname = strtolower($customField->fieldname);
+                if(strpos($lowerFieldname, 'ip') !== false){
+                    Capsule::table('tblcustomfields')->where('id', $customField->id)->update([
+                        'adminonly' => '',
+                    ]);
+                }
+            }
+        }
+    }
 }
 
 function ConfigServer_output(array $params)
