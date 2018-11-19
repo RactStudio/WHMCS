@@ -65,7 +65,7 @@ function ConfigServer_activate()
                 Capsule::table('tblcustomfields')->where('id', $customField->id)->update([
                     'fieldname' => 'IP',
                     'regexpr' => '/^((25[0-5]|2[0-4][0-9]|[01]?[1-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9][0-9]?)$/',
-                    'adminonly' => 'on',
+                    'adminonly' => '',
                     'showinvoice' => 'on',
                     'showorder' => 'on',
                     'required' => 'on',
