@@ -154,4 +154,8 @@ class ConfigServerAPIClient
         $response = self::checkResponse($this->httpClient->get('information'));
         return Information::parse($response, $this);
     }
+
+    public function __destruct(){
+        $this->httpClient->close();
+    }
 }

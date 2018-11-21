@@ -16,7 +16,6 @@ class CurlClient
         $this->curl = curl_init();
         $headers = array(
             'Accept: application/json',
-            'Content-Type: application/json',
             'Authorization: Bearer ' . $client->getApiToken(),
         );
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
@@ -30,16 +29,23 @@ class CurlClient
     public function get($url)
     {
         curl_setopt($this->curl, CURLOPT_URL, $this->client->getBaseUrl() . $url);
-        curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, "GET");
         return new CurlResponse($this->curl);
     }
 
     public function post($url, $params = [])
     {
+        if(isset($params['form_params'])){
+            $params = $params['form_params'];
+        }
         curl_setopt($this->curl, CURLOPT_URL, $this->client->getBaseUrl() . $url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+        curl_setopt($this->curl, CURLOPT_POST, 1);
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, $params);
+
 
         return new CurlResponse($this->curl);
+    }
+
+    public function close(){
+        curl_close($this->curl);
     }
 }
