@@ -16,10 +16,27 @@ class UI
     private $information;
     private $session;
 
+    private function getLatestVersion(){
+        $url = "https://raw.githubusercontent.com/configserverpro/WHMCS/master/modules/addons/ConfigServer/include/version";
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_HEADER => 0,
+            CURLOPT_AUTOREFERER => 1,
+            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_URL => $url,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => 0,
+            CURLOPT_FOLLOWLOCATION => 1,
+        ));
+        $response = curl_exec($curl);
+
+        return $response;
+    }
+
     public function __construct(array $params)
     {
         $version = $params['version'];
-        $remoteVersion = file_get_contents('https://raw.githubusercontent.com/configserverpro/WHMCS/master/modules/addons/ConfigServer/include/version');
+        $remoteVersion = $this->getLatestVersion();
         if(!empty($remoteVersion) && $version != $remoteVersion){
             $this->output .= '<div class="updateAvailable">';
             $this->output .= 'New update is available<br><br />';
@@ -41,7 +58,7 @@ class UI
             $this->client = ConfigServer_getClient($serverToken);
             $this->information = $this->client->information();
         } catch(APIException $e){
-            $this->output .= 'ConfigServer is currently not avaiable. Please try again later.';
+            $this->output .= 'ConfigServer is currently not available. Please try again later.';
             $this->output .= '<br><br>';
             $this->output .= $this->renderTemplate('copyright', []);
             return;
@@ -204,7 +221,7 @@ class UI
                 $row->discount = $information->discount;
             } catch (\Exception $e) {
                 if($e->getMessage() == "No data is provided."){
-                    $this->output .= 'ConfigServer is currently not avaiable. Please try again later.';
+                    $this->output .= 'ConfigServer is currently not available. Please try again later.';
                     $this->output .= '<br><br>';
                     $this->output .= $this->renderTemplate('copyright', []);
                     return;
