@@ -12,7 +12,7 @@ function ConfigServer_config()
     $configArray = array(
         "name" => "ConfigServer",
         "description" => "ConfigServer License Management module",
-        "version" => '1.0.2',
+        "version" => '1.0.3',
         "author" => "Amirhossein Matini",
         "language" => "english",
         "fields" => []
@@ -110,5 +110,7 @@ function ConfigServer_upgrade($vars)
 function ConfigServer_output(array $params)
 {
     echo '<style>'.file_get_contents((__DIR__) . '/assets/styles_admin.css').'</style>';
+    echo '<div class="ConfigServer">';
     echo (new UI($params))->output();
+    echo '</div>';
 }

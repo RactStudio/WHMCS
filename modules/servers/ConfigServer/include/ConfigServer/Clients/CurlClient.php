@@ -19,6 +19,7 @@ class CurlClient
             'Authorization: Bearer ' . $client->getApiToken(),
         );
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($this->curl, CURLOPT_TIMEOUT, 30);
         curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($this->curl, CURLOPT_HEADER, 0);
@@ -32,6 +33,24 @@ class CurlClient
         return new CurlResponse($this->curl);
     }
 
+    function http_build_query_for_curl( $arrays, &$new = array(), $prefix = null ) {
+
+        if ( is_object( $arrays ) ) {
+            $arrays = get_object_vars( $arrays );
+        }
+    
+        foreach ( $arrays AS $key => $value ) {
+            $k = isset( $prefix ) ? $prefix . '[' . $key . ']' : $key;
+            if ( is_array( $value ) OR is_object( $value )  ) {
+                $this->http_build_query_for_curl( $value, $new, $k );
+            } else {
+                $new[$k] = $value;
+            }
+        }
+
+        return $new;
+    }
+
     public function post($url, $params = [])
     {
         if(isset($params['form_params'])){
@@ -39,7 +58,7 @@ class CurlClient
         }
         curl_setopt($this->curl, CURLOPT_URL, $this->client->getBaseUrl() . $url);
         curl_setopt($this->curl, CURLOPT_POST, 1);
-        curl_setopt($this->curl, CURLOPT_POSTFIELDS, $params);
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->http_build_query_for_curl($params));
 
 
         return new CurlResponse($this->curl);

@@ -18,6 +18,18 @@ class UI
 
     public function __construct(array $params)
     {
+        $version = $params['version'];
+        $remoteVersion = file_get_contents('https://raw.githubusercontent.com/configserverpro/WHMCS/master/modules/addons/ConfigServer/include/version');
+        if($version != $remoteVersion){
+            $this->output .= '<div class="updateAvailable">';
+            $this->output .= 'New update is available<br><br />';
+            $this->output .=  'Current version: ' . $version . '<br />';
+            $this->output .=  'Latest version: ' . $remoteVersion . '<br>';
+            $this->output .= '<br><a target="_blank" href="https://github.com/configserverpro/WHMCS/archive/master.zip">» Download</a>';
+            $this->output .= '<br><a target="_blank" href="http://configserver.pro/modules/tutorial_csp_module_whmcs.pdf">» Tutorial</a>';
+            $this->output .= '</div>';
+            $this->output .= '<br>';
+        }
         $this->session = new SessionHelper();
         $this->params = $params;
         $serverToken = isset($_REQUEST['serverId']) ? $this->getServerToken((int) $_REQUEST['serverId']) : null;
@@ -29,7 +41,7 @@ class UI
             $this->client = ConfigServer_getClient($serverToken);
             $this->information = $this->client->information();
         } catch(APIException $e){
-            $this->output .= 'Config server is currently not avaiable. Please try again later.';
+            $this->output .= 'ConfigServer is currently not avaiable. Please try again later.';
             $this->output .= '<br><br>';
             $this->output .= $this->renderTemplate('copyright', []);
             return;
@@ -174,6 +186,7 @@ class UI
         }
         $serversArr = [];
         foreach ($servers as $server) {
+            if(empty($server->accesshash)) continue;
             try {
                 $client = ConfigServer_getClient($server->accesshash);
                 $information = $client->information();
@@ -190,6 +203,12 @@ class UI
                 $row->partnerLevel = $information->partnerLevel;
                 $row->discount = $information->discount;
             } catch (\Exception $e) {
+                if($e->getMessage() == "No data is provided."){
+                    $this->output .= 'ConfigServer is currently not avaiable. Please try again later.';
+                    $this->output .= '<br><br>';
+                    $this->output .= $this->renderTemplate('copyright', []);
+                    return;
+                }
                 $this->output .= $e->getMessage();
             }
         }
