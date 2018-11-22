@@ -20,7 +20,7 @@ class UI
     {
         $version = $params['version'];
         $remoteVersion = file_get_contents('https://raw.githubusercontent.com/configserverpro/WHMCS/master/modules/addons/ConfigServer/include/version');
-        if($version != $remoteVersion){
+        if(!empty($remoteVersion) && $version != $remoteVersion){
             $this->output .= '<div class="updateAvailable">';
             $this->output .= 'New update is available<br><br />';
             $this->output .=  'Current version: ' . $version . '<br />';
