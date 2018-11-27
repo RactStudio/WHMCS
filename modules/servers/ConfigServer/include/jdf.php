@@ -9,9 +9,9 @@
  */
 
 /*	F	*/
-if(!function_exists('jdate')){
-        function jdate($format, $timestamp='', $none='', $time_zone='Asia/Tehran', $tr_num='fa')
-        {
+if (!function_exists('jdate')) {
+    function jdate($format, $timestamp='', $none='', $time_zone='Asia/Tehran', $tr_num='fa')
+    {
         $T_sec=0;/* <= رفع خطاي زمان سرور ، با اعداد '+' و '-' بر حسب ثانيه */
 
         if ($time_zone!='local') {
@@ -219,11 +219,11 @@ if(!function_exists('jdate')){
         }
         }
         return($tr_num!='en')?tr_num($out, 'fa', '.'):$out;
-        }
+    }
 
-        /*	F	*/
-        function jstrftime($format, $timestamp='', $none='', $time_zone='Asia/Tehran', $tr_num='fa')
-        {
+    /*	F	*/
+    function jstrftime($format, $timestamp='', $none='', $time_zone='Asia/Tehran', $tr_num='fa')
+    {
         $T_sec=0;/* <= رفع خطاي زمان سرور ، با اعداد '+' و '-' بر حسب ثانيه */
 
         if ($time_zone!='local') {
@@ -450,11 +450,11 @@ if(!function_exists('jdate')){
         }
         }
         return($tr_num!='en')?tr_num($out, 'fa', '.'):$out;
-        }
+    }
 
-        /*	F	*/
-        function jmktime($h='', $m='', $s='', $jm='', $jd='', $jy='', $none='', $timezone='Asia/Tehran')
-        {
+    /*	F	*/
+    function jmktime($h='', $m='', $s='', $jm='', $jd='', $jy='', $none='', $timezone='Asia/Tehran')
+    {
         if ($timezone!='local') {
             date_default_timezone_set($timezone);
         }
@@ -488,11 +488,11 @@ if(!function_exists('jdate')){
                 }
             }
         }
-        }
+    }
 
-        /*	F	*/
-        function jgetdate($timestamp='', $none='', $timezone='Asia/Tehran', $tn='en')
-        {
+    /*	F	*/
+    function jgetdate($timestamp='', $none='', $timezone='Asia/Tehran', $tn='en')
+    {
         $ts=($timestamp==='')?time():tr_num($timestamp);
         $jdate=explode('_', jdate('F_G_i_j_l_n_s_w_Y_z', $ts, '', $timezone, $tn));
         return array(
@@ -508,27 +508,27 @@ if(!function_exists('jdate')){
         'month'=>$jdate[0],
         0=>tr_num($ts, $tn)
         );
-        }
+    }
 
-        /*	F	*/
-        function jcheckdate($jm, $jd, $jy)
-        {
+    /*	F	*/
+    function jcheckdate($jm, $jd, $jy)
+    {
         list($jm, $jd, $jy)=explode('_', tr_num($jm.'_'.$jd.'_'.$jy));
         $l_d=($jm==12)?((((($jy%33)%4)-1)==((int)(($jy%33)*0.05)))?30:29):31-(int)($jm/6.5);
         return($jm>12 or $jd>$l_d or $jm<1 or $jd<1 or $jy<1)?false:true;
-        }
+    }
 
-        /*	F	*/
-        function tr_num($str, $mod='en', $mf='٫')
-        {
+    /*	F	*/
+    function tr_num($str, $mod='en', $mf='٫')
+    {
         $num_a=array('0','1','2','3','4','5','6','7','8','9','.');
         $key_a=array('۰','۱','۲','۳','۴','۵','۶','۷','۸','۹',$mf);
         return($mod=='fa')?str_replace($num_a, $key_a, $str):str_replace($key_a, $num_a, $str);
-        }
+    }
 
-        /*	F	*/
-        function jdate_words($array, $mod='')
-        {
+    /*	F	*/
+    function jdate_words($array, $mod='')
+    {
         foreach ($array as $type=>$num) {
             $num=(int)tr_num($num);
             switch ($type) {
@@ -598,19 +598,19 @@ if(!function_exists('jdate')){
         }
         }
         return($mod==='')?$array:implode($mod, $array);
-        }
+    }
 
 
-        /** Gregorian & Jalali (Hijri_Shamsi,Solar) date converter Functions
-        Author: JDF.SCR.IR =>> Download Full Version : http://jdf.scr.ir/jdf
-        License: GNU/LGPL _ Open Source & Free _ Version: 2.70 : [2017=1395]
-        --------------------------------------------------------------------
-        1461 = 365*4 + 4/4   &  146097 = 365*400 + 400/4 - 400/100 + 400/400
-        12053 = 365*33 + 32/4    &    36524 = 365*100 + 100/4 - 100/100   */
+    /** Gregorian & Jalali (Hijri_Shamsi,Solar) date converter Functions
+    Author: JDF.SCR.IR =>> Download Full Version : http://jdf.scr.ir/jdf
+    License: GNU/LGPL _ Open Source & Free _ Version: 2.70 : [2017=1395]
+    --------------------------------------------------------------------
+    1461 = 365*4 + 4/4   &  146097 = 365*400 + 400/4 - 400/100 + 400/400
+    12053 = 365*33 + 32/4    &    36524 = 365*100 + 100/4 - 100/100   */
 
-        /*	F	*/
-        function gregorian_to_jalali($gy, $gm, $gd, $mod='')
-        {
+    /*	F	*/
+    function gregorian_to_jalali($gy, $gm, $gd, $mod='')
+    {
         list($gy, $gm, $gd)=explode('_', tr_num($gy.'_'.$gm.'_'.$gd));/* <= Extra :اين سطر ، جزء تابع اصلي نيست */
         $g_d_m=array(0,31,59,90,120,151,181,212,243,273,304,334);
         if ($gy > 1600) {
@@ -638,11 +638,11 @@ if(!function_exists('jdate')){
             $jd=1+(($days-186)%30);
         }
         return($mod==='')?array($jy,$jm,$jd):$jy .$mod .$jm .$mod .$jd;
-        }
+    }
 
-        /*	F	*/
-        function jalali_to_gregorian($jy, $jm, $jd, $mod='')
-        {
+    /*	F	*/
+    function jalali_to_gregorian($jy, $jm, $jd, $mod='')
+    {
         list($jy, $jm, $jd)=explode('_', tr_num($jy.'_'.$jm.'_'.$jd));/* <= Extra :اين سطر ، جزء تابع اصلي نيست */
         if ($jy > 979) {
             $gy=1600;
@@ -674,5 +674,5 @@ if(!function_exists('jdate')){
             $gd-=$v;
         }
         return($mod==='')?array($gy,$gm,$gd):$gy .$mod .$gm .$mod .$gd;
-        }
     }
+}
