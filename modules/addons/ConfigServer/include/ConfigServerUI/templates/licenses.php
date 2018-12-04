@@ -70,6 +70,7 @@
             <th>Cost</th>
             <th>Status</th>
             <th>Due date</th>
+            <th>Service</th>
             <th></th>
         </tr>
         <?php foreach($vars['licenses'] as $license):?>
@@ -81,6 +82,7 @@
                 <td><?=$vars['products'][$license->productId]->priceWithDiscount($license->cycle);?>$ (<?=$license->cycle;?>)</td>
                 <td><?=$license->status;?></td>
                 <td><?=$license->renewDate;?> (<?=$license->remainingDays();?> days)</td>
+                <td><?=$license->client;?></td>
                 <td style="height: 100%">
                     <a onclick="return confirm('Are you sure you want to extend this license?');" href="addonmodules.php?module=ConfigServer&serverId=<?=$vars['serverId'];?>&extendLicense=<?=$license->id;?>&c=<?=$vars['sessionChecker'];?>">
                         <img src="images/icons/add.png" border="0" align="absmiddle">
@@ -91,7 +93,7 @@
                     </a>
                 </td>
             </tr>
-<?php endforeach;?>
+        <?php endforeach;?>
         </tbody>
     </table>
 </div>

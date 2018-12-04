@@ -29,7 +29,6 @@ class UI
             CURLOPT_FOLLOWLOCATION => 1,
         ));
         $response = curl_exec($curl);
-
         curl_close($curl);
 
         return $response;
@@ -186,6 +185,20 @@ class UI
         $vars['serverId'] = $_REQUEST['serverId'];
         $vars['criteria'] = $criteria;
         $vars['licenses'] = $this->client->licenses()->all($criteria);
+
+        foreach($vars['licenses'] as &$license){
+            $license->client = '?';
+            $result = Capsule::table('tblcustomfields as f')->join('tblcustomfieldsvalues as v', 'v.fieldid', '=', 'f.id')->where('f.type', 'product')->where('f.fieldname', 'licenseId')->where('v.value', $license->id)->first(['v.relid']);
+            if($result){
+                $service = Capsule::table('tblhosting')->where('server', (int)$_REQUEST['serverId'])->where('id', $result->relid)->whereIn('domainstatus', ['Active', 'Suspended'])->first(['id', 'userid']);
+                if($service){
+                    $client = Capsule::table('tblclients')->where('id', $service->userid)->first();
+                    $license->client = '<span title="'.sprintf('%s %s', $client->firstname, $client->lastname).'"><a target="_blank" href="clientsservices.php?userid='.$client->id.'&id='.$service->id.'">🔍</a></span>';
+                }
+            }
+        }
+
+
         $vars['sessionChecker'] = $this->session->getChecker();
         $vars['products'] = $this->client->products()->all();
         $vars['information'] = $this->information;

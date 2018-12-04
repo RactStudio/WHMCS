@@ -188,6 +188,8 @@ function ConfigServer_SuspendAccount(array $params)
             if ($license->changeStatus(License::STATUS_SUSPENDED)) {
                 return 'success';
             }
+        } else if($license->status == License::STATUS_SUSPENDED){
+            return 'success';
         } else {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotActive');
         }
@@ -208,6 +210,9 @@ function ConfigServer_UnsuspendAccount(array $params)
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotFound');
+        }
+        if ($license->status == License::STATUS_ACTIVE) {
+            return 'success';
         }
         if ($license->status == License::STATUS_SUSPENDED) {
             if ($license->changeStatus(License::STATUS_ACTIVE)) {
