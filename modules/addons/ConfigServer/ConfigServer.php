@@ -12,7 +12,7 @@ function ConfigServer_config()
     $configArray = array(
         "name" => "ConfigServer",
         "description" => "ConfigServer License Management module",
-        "version" => '1.0.5',
+        "version" => '1.0.7',
         "author" => "Amirhossein Matini",
         "language" => "english",
         "fields" => []
@@ -64,7 +64,7 @@ function ConfigServer_activate()
             if(strpos($lowerFieldname, 'ip') !== false){
                 Capsule::table('tblcustomfields')->where('id', $customField->id)->update([
                     'fieldname' => 'IP',
-                    'regexpr' => '/^((25[0-5]|2[0-4][0-9]|[01]?[1-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9][0-9]?)$/',
+                    'regexpr' => '/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\z/',
                     'adminonly' => '',
                     'showinvoice' => 'on',
                     'showorder' => 'on',
@@ -91,7 +91,8 @@ function ConfigServer_deactivate()
 
 function ConfigServer_upgrade($vars)
 {
-    if($vars['version'] < 101){
+    $version = str_replace('.', null, $vars['version']);
+    if($version < 101){
         $products = Capsule::table('tblproducts')->where('servertype', 'ConfigServer')->get();
         foreach ($products as $product) {
             $customFields = Capsule::table('tblcustomfields')->where('type', 'product')->where('relid', $product->id)->get();
@@ -100,6 +101,20 @@ function ConfigServer_upgrade($vars)
                 if(strpos($lowerFieldname, 'ip') !== false){
                     Capsule::table('tblcustomfields')->where('id', $customField->id)->update([
                         'adminonly' => '',
+                    ]);
+                }
+            }
+        }
+    }
+    if($version < 107){
+        $products = Capsule::table('tblproducts')->where('servertype', 'ConfigServer')->get();
+        foreach($products as $product){
+            $customFields = Capsule::table('tblcustomfields')->where('type', 'product')->where('relid', $product->id)->get();
+            foreach($customFields as $customField){
+                $lowerFieldname = strtolower($customField->fieldname);
+                if(strpos($lowerFieldname, 'ip') !== false){
+                    Capsule::table('tblcustomfields')->where('id', $customField->id)->update([
+                        'regexpr' => '/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\z/',
                     ]);
                 }
             }

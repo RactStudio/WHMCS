@@ -41,8 +41,8 @@ class UI
         if(!empty($remoteVersion) && $version != $remoteVersion){
             $this->output .= '<div class="updateAvailable">';
             $this->output .= 'New update is available<br><br />';
-            $this->output .=  'Current version: ' . $version . '<br />';
-            $this->output .=  'Latest version: ' . $remoteVersion . '<br>';
+            $this->output .= 'Current version: ' . $version . '<br />';
+            $this->output .= 'Latest version: ' . $remoteVersion . '<br>';
             $this->output .= '<br><a target="_blank" href="https://github.com/configserverpro/WHMCS/archive/master.zip">» Download</a>';
             $this->output .= '<br><a target="_blank" href="http://configserver.pro/modules/tutorial_csp_module_whmcs.pdf">» Tutorial</a>';
             $this->output .= '</div>';
@@ -122,7 +122,7 @@ class UI
                 $customfields = [
                     'IP' => [
                         'type' => 'text',
-                        'regexpr' => '/^((25[0-5]|2[0-4][0-9]|[01]?[1-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9][0-9]?)$/',
+                        'regexpr' => '/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\z/',
                         'adminonly' => false,
                         'showinvoice' => true,
                         'showorder' => true,
