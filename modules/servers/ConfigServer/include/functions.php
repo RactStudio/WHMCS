@@ -24,23 +24,21 @@ function ConfigServer_update()
 
     $file_path = __DIR__ . '/master.zip';
 
-    if(is_file($file_path)){
-        $archiveUrl = 'https://codeload.github.com/configserverpro/WHMCS/zip/master';
-        $ch = curl_init($archiveUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_BINARYTRANSFER => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-        ]);
-        $raw_file_data = curl_exec($ch);
-        if (curl_errno($ch)) {
-            return 'Failed to download archive: ' . curl_error($ch);
-        }
-        curl_close($ch);
-        file_put_contents($file_path, $raw_file_data);
+    $archiveUrl = 'https://codeload.github.com/configserverpro/WHMCS/zip/master';
+    $ch = curl_init($archiveUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_BINARYTRANSFER => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+    ]);
+    $raw_file_data = curl_exec($ch);
+    if (curl_errno($ch)) {
+        return 'Failed to download archive: ' . curl_error($ch);
     }
+    curl_close($ch);
+    file_put_contents($file_path, $raw_file_data);
 
     $zip = new ZipArchive();
     $res = $zip->open($file_path);
