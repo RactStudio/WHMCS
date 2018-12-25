@@ -339,6 +339,7 @@ class UI
 
     private function renderTemplate($template, $vars)
     {
+        $vars['version'] = $this->params['version'];
         return PHPView::render(__DIR__ . '/templates/' . $template, $vars);
     }
 
