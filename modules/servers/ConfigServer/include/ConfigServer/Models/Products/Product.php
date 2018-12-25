@@ -16,7 +16,6 @@ class Product extends Model
     public $fullName;
     public $osType;
     public $cost;
-    public $osRequired;
     public $discount;
     public $osOptions;
     public $installationHelp;
@@ -35,7 +34,6 @@ class Product extends Model
         $obj->fullName = $input->fullname;
         $obj->osType = $input->ostype;
         $obj->cost = $input->cost;
-        $obj->osRequired = $input->osRequired;
         $obj->discount = $input->discount;
         $obj->osOptions = $input->osOptions;
         $obj->installationHelp = $input->installationHelp;

@@ -36,6 +36,11 @@ class UI
 
     public function __construct(array $params)
     {
+        if(isset($_REQUEST['update']) && $_REQUEST['update'] == 1){
+            ConfigServer_update();
+            header("Location: addonmodules.php?module=ConfigServer");
+            exit();
+        }
         $version = $params['version'];
         $remoteVersion = $this->getLatestVersion();
         if(!empty($remoteVersion) && $version != $remoteVersion){
@@ -43,8 +48,7 @@ class UI
             $this->output .= 'New update is available<br><br />';
             $this->output .= 'Current version: ' . $version . '<br />';
             $this->output .= 'Latest version: ' . $remoteVersion . '<br>';
-            $this->output .= '<br><a target="_blank" href="https://github.com/configserverpro/WHMCS/archive/master.zip">» Download</a>';
-            $this->output .= '<br><a target="_blank" href="http://configserver.pro/modules/tutorial_csp_module_whmcs.pdf">» Tutorial</a>';
+            $this->output .= '<br><a target="_blank" href="addonmodules.php?module=ConfigServer&update=1">» Update</a>';
             $this->output .= '</div>';
             $this->output .= '<br>';
         }

@@ -91,16 +91,16 @@ function ConfigServer_CreateAccount(array $params)
 {
     global $_LANG;
     $client = ConfigServer_getClient($params['serveraccesshash']);
-    if (!isset($params['customfields']['licenseId'])) {
+    if (!array_key_exists('licenseId', $params['customfields'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'licenseIdFieldNotFound');
     }
-    if (!isset($params['customfields']['IP'])) {
+    if (!array_key_exists('IP', $params['customfields'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'ipFieldNotFound');
     }
     if (!empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'licenseAlreadyAssigned');
     }
-    if (!isset($params['customfields']['IP']) && empty($params['customfields']['IP'])) {
+    if (empty($params['customfields']['IP'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'ipAddressEmpty');
     }
     try {
@@ -110,9 +110,6 @@ function ConfigServer_CreateAccount(array $params)
     }
     try {
         $product = $client->products()->get($params['configoption1']);
-        if($product->osRequired && !isset($params['customfields']['OS'])){
-            return ConfigServer_getLocale($_LANG['locale'], 'ostypeRequired');
-        }
         $os = isset($params['customfields']['OS']) ? $params['customfields']['OS'] : null;
         $cycle = lcfirst($service->billingcycle);
         $response = $product->order($params['customfields']['IP'], $cycle, $os);
@@ -215,6 +212,10 @@ function ConfigServer_UnsuspendAccount(array $params)
             return 'success';
         }
         if ($license->status == License::STATUS_SUSPENDED) {
+            if(strtotime($license->renewDate) < time()){
+                $license->renew();
+                return 'success';
+            }
             if ($license->changeStatus(License::STATUS_ACTIVE)) {
                 return 'success';
             }
