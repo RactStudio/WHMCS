@@ -36,9 +36,13 @@ class UI
 
     public function __construct(array $params)
     {
-        if(isset($_REQUEST['update']) && $_REQUEST['update'] == 1){
-            ConfigServer_update();
-            header("Location: addonmodules.php?module=ConfigServer");
+        if(isset($_REQUEST['update'])){
+            if ($_REQUEST['update'] == 1) {
+                ConfigServer_update();
+                header("Location: addonmodules.php?module=ConfigServer&update=2");
+            } else if($_REQUEST['update'] == 2){
+                header("Location: addonmodules.php?module=ConfigServer");
+            }
             exit();
         }
         $version = $params['version'];
