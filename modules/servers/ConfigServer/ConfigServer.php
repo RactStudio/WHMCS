@@ -91,13 +91,10 @@ function ConfigServer_CreateAccount(array $params)
 {
     global $_LANG;
     $client = ConfigServer_getClient($params['serveraccesshash']);
-    if (!array_key_exists('licenseId', $params['customfields'])) {
-        return ConfigServer_getLocale($_LANG['locale'], 'licenseIdFieldNotFound');
-    }
     if (!array_key_exists('IP', $params['customfields'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'ipFieldNotFound');
     }
-    if (!empty($params['customfields']['licenseId'])) {
+    if (array_key_exists('licenseId', $params['customfields']) && !empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'licenseAlreadyAssigned');
     }
     if (empty($params['customfields']['IP'])) {
