@@ -107,9 +107,8 @@ function ConfigServer_CreateAccount(array $params)
     }
     try {
         $product = $client->products()->get($params['configoption1']);
-        $os = isset($params['customfields']['OS']) ? $params['customfields']['OS'] : null;
         $cycle = lcfirst($service->billingcycle);
-        $response = $product->order($params['customfields']['IP'], $cycle, $os);
+        $response = $product->order($params['customfields']['IP'], $cycle);
             if ($response){
                 $customField = Capsule::table('tblcustomfields')->where('relid', $params['pid'])->where('fieldname', 'licenseId')->first(['id']);
             if ($customField) {
@@ -304,6 +303,9 @@ function ConfigServer_ClientArea(array $params)
             $commands = preg_replace('/([A-Za-z0-9]+)\.configserver\.pro/', $information->dedicatedLink, $commands);
         }
         $vars['installationHelp'][] = (object)['os' => $os, 'commands' => $commands];
+    }
+    if(is_file(__DIR__ . '/include/templates/clientarea_custom.php')){
+        return ConfigServer_renderTemplate('clientarea_custom', $vars);
     }
     return ConfigServer_renderTemplate('clientarea', $vars);
 }

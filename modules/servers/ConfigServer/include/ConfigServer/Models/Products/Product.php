@@ -51,12 +51,11 @@ class Product extends Model
      * @return bool|License
      * @throws \ConfigServer\APIException
      */
-    public function order($ipAddress, $cycle, $os)
+    public function order($ipAddress, $cycle)
     {
         $data = [
             'ip' => $ipAddress,
             'cycle' => $cycle,
-            'os' => $os,
         ];
         $response = ConfigServerAPIClient::checkResponse($this->httpClient->post('products/'.$this->id.'/add', [
             'form_params' => $data,
