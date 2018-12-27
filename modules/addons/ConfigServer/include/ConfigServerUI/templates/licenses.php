@@ -63,20 +63,20 @@
     <table style="text-align: center;" id="sortabletbl1" class="datatable licenses" width="100%">
         <tbody>
         <tr>
-            <th>ID</th>
+            <th style="width: 75px">ID</th>
             <th>Name</th>
             <th>IP</th>
             <th>Hostname</th>
             <th>Cost</th>
             <th>Status</th>
             <th>Due date</th>
-            <th>Service</th>
-            <th></th>
+            <th style="width: 55px">Service</th>
+            <th style="width: 50px"></th>
         </tr>
         <?php foreach($vars['licenses'] as $license):?>
             <tr class="<?=$license->status;?>">
-                <td><?=$license->id;?></td>
-                <td><?=$vars['products'][$license->productId]->fullName;?></td>
+                <td><?=$license->id;?></t>
+                <td class="product" title="<?=$vars['products'][$license->productId]->fullName;?>"><?=$vars['products'][$license->productId]->fullName;?></td>
                 <td><?=$license->ip;?></td>
                 <td><?=$license->hostname;?></td>
                 <td><?=$vars['products'][$license->productId]->priceWithDiscount($license->cycle);?>$ (<?=$license->cycle;?>)</td>

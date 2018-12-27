@@ -10,7 +10,7 @@ use ConfigServer\APIException;
 use ConfigServer\PHPView;
 class UI
 {
-    private $output = null;
+    private $output = '<div class="ConfigServer">';
     private $params;
     private $client;
     private $information;
@@ -47,14 +47,21 @@ class UI
         }
         $version = $params['version'];
         $remoteVersion = $this->getLatestVersion();
+
+        $v1 = (int)str_replace('.', null, $params['version']);
+        $v2 = (int)str_replace('.', null, $remoteVersion);
+
         if(!empty($remoteVersion) && $version != $remoteVersion){
-            $this->output .= '<div class="updateAvailable">';
-            $this->output .= 'New update is available<br><br />';
-            $this->output .= 'Current version: ' . $version . '<br />';
-            $this->output .= 'Latest version: ' . $remoteVersion . '<br>';
-            $this->output .= '<br><a target="_blank" href="addonmodules.php?module=ConfigServer&update=1">» Update</a>';
+            $this->output .= '<div class="alert alert-info text-center">';
+            $this->output .= "New update is available (Current version: $version, Latest version: $remoteVersion)&nbsp;";
+            $this->output .= 'click <a href="addonmodules.php?module=ConfigServer&update=1"><strong>here</strong></a> to update.';
             $this->output .= '</div>';
-            $this->output .= '<br>';
+            if($v2-$v1 >= 5){
+                $this->output .= '<div class="alert alert-danger text-center">';
+                $this->output .= "<strong>Your version is too old, you will need to update the module to continue using it.</strong>";
+                $this->output .= '</div>';
+                return;
+            }
         }
         $this->session = new SessionHelper();
         $this->params = $params;
@@ -196,7 +203,12 @@ class UI
 
         foreach($vars['licenses'] as &$license){
             $license->client = '?';
-            $result = Capsule::table('tblcustomfields as f')->join('tblcustomfieldsvalues as v', 'v.fieldid', '=', 'f.id')->where('f.type', 'product')->where('f.fieldname', 'licenseId')->where('v.value', $license->id)->first(['v.relid']);
+            $result = Capsule::table('tblcustomfields as f')
+            ->join('tblcustomfieldsvalues as v', 'v.fieldid', '=', 'f.id')
+            ->where('f.type', 'product')->where('f.fieldname', 'licenseId')
+            ->where('v.value', $license->id)
+            ->whereRaw('(SELECT COUNT(tblhosting.id) FROM tblhosting WHERE tblhosting.id=v.relid)>0')
+            ->first(['v.relid']);
             if($result){
                 $service = Capsule::table('tblhosting')->where('server', (int)$_REQUEST['serverId'])->where('id', $result->relid)->whereIn('domainstatus', ['Active', 'Suspended'])->first(['id', 'userid']);
                 if($service){
@@ -349,6 +361,6 @@ class UI
 
     public function output()
     {
-        return $this->output;
+        return $this->output . '</div>';
     }
 }

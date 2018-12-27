@@ -28,3 +28,9 @@ table.license.suspended {
     direction: ltr;
     text-align: left;
 }
+table.datatable.licenses {
+    table-layout: fixed;
+}
+table.datatable.licenses td.product {
+    word-break: break-word;
+}
