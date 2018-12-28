@@ -297,6 +297,7 @@ class UI
         $vars['licenses'] = $this->client->licenses()->all($criteria);
 
         foreach($vars['licenses'] as &$license){
+            $client = null;
             $license->client = '?';
             $result = Capsule::table('tblcustomfields as f')
             ->join('tblcustomfieldsvalues as v', 'v.fieldid', '=', 'f.id')
@@ -304,13 +305,35 @@ class UI
             ->where('v.value', $license->id)
             ->whereRaw('(SELECT COUNT(tblhosting.id) FROM tblhosting WHERE tblhosting.id=v.relid)>0')
             ->first(['v.relid']);
+            $addonId = 0;
             if($result){
                 $service = Capsule::table('tblhosting')->where('server', (int)$_REQUEST['serverId'])->where('id', $result->relid)->whereIn('domainstatus', ['Active', 'Suspended'])->first(['id', 'userid']);
                 if($service){
                     $client = Capsule::table('tblclients')->where('id', $service->userid)->first();
+                }
+            } else {
+                $result = Capsule::table('tblcustomfields as f')
+                    ->join('tblcustomfieldsvalues as v', 'v.fieldid', '=', 'f.id')
+                    ->where('f.type', 'addon')->where('f.fieldname', 'licenseId')
+                    ->where('v.value', $license->id)
+                    ->whereRaw('(SELECT COUNT(tblhostingaddons.id) FROM tblhostingaddons WHERE tblhostingaddons.id=v.relid)>0')
+                    ->first(['v.relid']);
+                if($result){
+                    $service = Capsule::table('tblhostingaddons')->where('server', (int)$_REQUEST['serverId'])->where('id', $result->relid)->whereIn('status', ['Active', 'Suspended'])->first(['id', 'userid']);
+                    if($service){
+                        $addonId = $result->relid;
+                        $client = Capsule::table('tblclients')->where('id', $service->userid)->first();
+                    }
+                }
+            }
+            if(!is_null($client)){
+                if($addonId>0){
+                    $license->client = '<span title="'.sprintf('%s %s', $client->firstname, $client->lastname).'"><a target="_blank" href="clientsservices.php?userid='.$client->id.'&id='.$service->id.'&aid='.$addonId.'">🔍</a></span>';
+                } else {
                     $license->client = '<span title="'.sprintf('%s %s', $client->firstname, $client->lastname).'"><a target="_blank" href="clientsservices.php?userid='.$client->id.'&id='.$service->id.'">🔍</a></span>';
                 }
             }
+
         }
 
         $vars['sessionChecker'] = $this->session->getChecker();

@@ -9,13 +9,6 @@ use ConfigServer\APIException;
 use ConfigServer\Models\Licenses\License;
 use ConfigServer\PHPView;
 
-/**
- * Created by PhpStorm.
- * User: Amirhossein Matini
- * Date: 10/9/2018
- * Time: 17:56
- */
-
 function ConfigServer_MetaData()
 {
     return array(
@@ -32,7 +25,7 @@ function ConfigServer_TestConnection(array $params)
         return ConfigServer_getLocale($_LANG['locale'], 'pleaseEnterAPIToken');
     }
     try {
-        $client = ConfigServer_getClient($params['serveraccesshash']);
+        $client = ConfigServer_getClientByParams($params);
         if ($client->ping()) {
             return ['success' => true, 'error' => null];
         }
@@ -73,7 +66,7 @@ function ConfigServer_ConfigOptions()
 
 function ConfigServer_loadProducts(array $params)
 {
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $products = $client->products()->all();
         $result = [];
@@ -87,10 +80,23 @@ function ConfigServer_loadProducts(array $params)
     }
 }
 
+function ConfigServer_getClientByParams(array $params){
+    if(isset($params['addonId']) && $params['addonId'] > 0){
+        $version = (int)str_replace('.', null, explode("-", $params['whmcsVersion'])[0]);
+        if($version < 745){
+            $server = Capsule::table('tblservers')->where('type', 'ConfigServer')->first();
+            return ConfigServer_getClient($server->accesshash);
+        }
+    }
+    if(isset($params['serveraccesshash'])){
+        return ConfigServer_getClient($params['serveraccesshash']);
+    }
+}
+
 function ConfigServer_CreateAccount(array $params)
 {
     global $_LANG;
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     if (!array_key_exists('IP', $params['customfields'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'ipFieldNotFound');
     }
@@ -100,36 +106,54 @@ function ConfigServer_CreateAccount(array $params)
     if (empty($params['customfields']['IP'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'ipAddressEmpty');
     }
-    try {
-        $service = \WHMCS\Service\Service::findOrFail($params['serviceid']);
-    } catch (Exception $e) {
-        return 'failure';
+    if($params['addonId'] > 0){
+        $addon = Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->first();
+    } else {
+        try {
+            $service = \WHMCS\Service\Service::findOrFail($params['serviceid']);
+        } catch (Exception $e) {
+            return 'failure';
+        }
     }
+    $type = $params['addonId'] > 0 ? 'addon' : 'product';
+    $serviceId = $type == 'addon' ? $params['addonId'] : $params['serviceid'];
     try {
         $product = $client->products()->get($params['configoption1']);
-        $cycle = lcfirst($service->billingcycle);
+        if(isset($params['addonId'])){
+            $cycle = lcfirst($addon->billingcycle);
+        } else {
+            $cycle = lcfirst($service->billingcycle);
+        }
         $response = $product->order($params['customfields']['IP'], $cycle);
             if ($response){
-                $customField = Capsule::table('tblcustomfields')->where('relid', $params['pid'])->where('fieldname', 'licenseId')->first(['id']);
+                $customField = Capsule::table('tblcustomfields')
+                    ->where('type', $type)
+                    ->where('relid', $type == 'addon' ? $addon->addonid : $params['pid'])
+                    ->where('fieldname', 'licenseId')
+                    ->first(['id']);
             if ($customField) {
-                $customFieldValueExists = Capsule::table('tblcustomfieldsvalues')->where('relid', $params['serviceid'])->where('fieldid', $customField->id)->count() > 0;
+                $customFieldValueExists = Capsule::table('tblcustomfieldsvalues')
+                    ->where('relid', $serviceId)
+                    ->where('fieldid', $customField->id)->count() > 0;
                 if ($customFieldValueExists) {
                     Capsule::table('tblcustomfieldsvalues')
-                        ->where('relid', $params['serviceid'])
+                        ->where('relid', $serviceId)
                         ->where('fieldid', $customField->id)
-                        ->update(['value' => $response->id,]);
+                        ->update(['value' => $response->id]);
                 } else {
                     Capsule::table('tblcustomfieldsvalues')->insert([
-                        'relid' => $params['serviceid'],
+                        'relid' => $serviceId,
                         'fieldid' => $customField->id,
                         'value' => $response->id,
                     ]);
                 }
             }
-            /** @var $server Server */
-            $params['model']->serviceProperties->save([
-                'domain' => $params['customfields']['IP'],
-            ]);
+            if($type == 'product'){
+                /** @var $server Server */
+                $params['model']->serviceProperties->save([
+                    'domain' => $params['customfields']['IP'],
+                ]);
+            }
             return 'success';
         }
     } catch (APIException $e) {
@@ -144,18 +168,27 @@ function ConfigServer_Renew(array $params)
     if (empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned');
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotFound');
         }
-        try {
-            $product = \WHMCS\Service\Service::findOrFail($params['serviceid']);
-        } catch (Exception $e) {
-            return 'failure';
+        if(isset($params['addonId'])){
+            $addon = Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->first();
+        } else {
+            try {
+                $service = \WHMCS\Service\Service::findOrFail($params['serviceid']);
+            } catch (Exception $e) {
+                return 'failure';
+            }
         }
-        $license->changeCycle(lcfirst($product->billingcycle));
+        if(isset($params['addonId'])){
+            $cycle = lcfirst($addon->billingcycle);
+        } else {
+            $cycle = lcfirst($service->billingcycle);
+        }
+        $license->changeCycle($cycle);
         if ($license->renew()) {
             return 'success';
         }
@@ -171,7 +204,7 @@ function ConfigServer_SuspendAccount(array $params)
     if (empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned');
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
@@ -198,7 +231,7 @@ function ConfigServer_UnsuspendAccount(array $params)
     if (empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned');
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
@@ -230,7 +263,7 @@ function ConfigServer_ChangeIPAdmin(array $params)
     if (empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned');
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
@@ -258,7 +291,7 @@ function ConfigServer_renderTemplate($template, $vars){
 function ConfigServer_ClientArea(array $params)
 {
     global $_LANG;
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $t = function ($x) use ($_LANG) {
             return ConfigServer_getLocale($_LANG['locale'], $x);
@@ -322,7 +355,7 @@ function ConfigServer_AdminServicesTabFields(array $params)
             $t('LicenseInfo') => ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned'),
         ];
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
     } catch (APIException $e) {
@@ -359,18 +392,26 @@ function ConfigServer_TerminateAccount(array $params){
     if (empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned');
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotFound');
         }
-        $customField = Capsule::table('tblcustomfields')->where('relid', $params['pid'])->where('fieldname', 'licenseId')->first(['id']);
+        $type = $params['addonId'] > 0 ? 'addon' : 'product';
+        $serviceId = $type == 'addon' ? $params['addonId'] : $params['serviceid'];
+        if(isset($params['addonId'])){
+            $relid = Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->first()->addonid;
+        } else {
+            $relid = $params['pid'];
+        }
+        $customField = Capsule::table('tblcustomfields')
+            ->where('type', $type)
+            ->where('relid', $relid)
+            ->where('fieldname', 'licenseId')
+            ->first(['id']);
         if ($customField) {
-            $customFieldValueExists = Capsule::table('tblcustomfieldsvalues')->where('relid', $params['serviceid'])->where('fieldid', $customField->id)->count() > 0;
-            if ($customFieldValueExists) {
-                Capsule::table('tblcustomfieldsvalues')->where('relid', $params['serviceid'])->where('fieldid', $customField->id)->delete();
-            }
+            Capsule::table('tblcustomfieldsvalues')->where('relid', $serviceId)->where('fieldid', $customField->id)->delete();
         }
         return 'success';
     } catch (APIException $e) {
@@ -384,19 +425,27 @@ function ConfigServer_SyncWithCSP(array $params){
     if (empty($params['customfields']['licenseId'])) {
         return ConfigServer_getLocale($_LANG['locale'], 'noLicenseAssigned');
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $license = $client->licenses()->get($params['customfields']['licenseId']);
         if (!$license) {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotFound');
         }
-         /** @var $server Server */
-         $params['model']->serviceProperties->save([
-            'domain' => $license->ip,
-        ]);
-        Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
-            'nextduedate' => $license->renewDate
-        ]);
+        if(!isset($params['addonId'])){
+            /** @var $server Server */
+            $params['model']->serviceProperties->save([
+                'domain' => $license->ip,
+            ]);
+        }
+        if(!isset($params['addonId'])){
+            Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->update([
+                'nextduedate' => $license->renewDate
+            ]);
+        } else {
+            Capsule::table('tblhosting')->where('id', $params['serviceid'])->update([
+                'nextduedate' => $license->renewDate
+            ]);
+        }
         return 'success';
     } catch (APIException $e) {
         return $e->getMessage();
@@ -410,7 +459,7 @@ function ConfigServer_AdminCustomButtonArray(array $params)
     if (empty($params['customfields']['licenseId'])) {
         return [];
     }
-    $client = ConfigServer_getClient($params['serveraccesshash']);
+    $client = ConfigServer_getClientByParams($params);
     try {
         $t = function ($x) use ($_LANG) {
             return ConfigServer_getLocale($_LANG['locale'], $x);
