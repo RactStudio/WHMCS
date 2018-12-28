@@ -47,7 +47,6 @@ function ConfigServer_update()
         return "Unable to open $file_path, error code: $res";
     }
 
-
     $extractSubdirTo = function ($destination, $subdir) use($zip)
     {
       $errors = array();

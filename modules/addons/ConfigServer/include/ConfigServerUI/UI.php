@@ -313,7 +313,6 @@ class UI
             }
         }
 
-
         $vars['sessionChecker'] = $this->session->getChecker();
         $vars['products'] = $this->client->products()->all();
         $vars['information'] = $this->information;
@@ -327,9 +326,11 @@ class UI
     private function renderChooseServer()
     {
         $servers = Capsule::table('tblservers')->where('type', 'ConfigServer')->get();
-        if(sizeof($servers) == 1){
-            header("Location: addonmodules.php?module=ConfigServer&serverId={$servers[0]->id}");
-            exit;
+        if(!isset($_REQUEST['serverId']) && sizeof($servers) == 1){
+            foreach($servers as $server){
+                header("Location: addonmodules.php?module=ConfigServer&serverId={$server->id}");
+                exit;
+            }
         }
         $serversArr = [];
         foreach ($servers as $server) {
@@ -340,7 +341,6 @@ class UI
 
                 $row = &$serversArr[];
                 $row = new \stdClass;
-
 
                 $row->id = $server->id;
                 $row->credit = $information->credit;
