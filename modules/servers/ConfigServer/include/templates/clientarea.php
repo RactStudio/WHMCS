@@ -58,7 +58,7 @@
     <h2>Installation</h2>
     <hr/>
     <?php foreach($vars['installationHelp'] as $item):?>
-        <h4><?=$vars->os;?></h4>
+        <h4><?=$item->os;?></h4>
         <div class="message markdown-content">
         <pre><code><?=$item->commands;?></code></pre>
         </div>

@@ -17,7 +17,7 @@ class UI
     private $session;
 
     private function getLatestVersion(){
-        $url = "https://raw.githubusercontent.com/configserverpro/WHMCS/master/modules/addons/ConfigServer/include/version";
+        $url = "https://raw.githubusercontent.com/configserverpro/WHMCS/master/modules/addons/ConfigServer/include/version?" . time();
         $curl = curl_init();
         curl_setopt_array($curl, array(
             CURLOPT_HEADER => 0,
@@ -99,77 +99,172 @@ class UI
         $vars['productGroup'] = isset($_POST['productGroup']) ? (int)$_POST['productGroup'] : false;
         $vars['roundBy'] = isset($_POST['roundBy']) ? (float)$_POST['roundBy'] : 100;
         $vars['product'] = array_unique(isset($_POST['product']) ? (array)$_POST['product'] : []);
+        $vars['productType'] = isset($_POST['productType']) && $_POST['productType'] == 'addon' ? 'addon' : 'product';
 
         if($_SERVER['REQUEST_METHOD'] === 'POST'){
             foreach($vars['product'] as $pid){
                 if(empty($pid)) continue;
-                $productDetails = $this->client->products()->get($pid);
-
-                $product = new \WHMCS\Product\Product();
-                $product->type = "other";
-                $product->productGroupId = $vars['productGroup'];
-                $product->name = $productDetails->fullName;
-                $product->paymentType = 'recurring';
-                $product->showDomainOptions = false;
-                $displayOrder = \Illuminate\Database\Capsule\Manager::table("tblproducts")->where("gid", "=", $vars['productGroup'])->max("order");
-                $product->displayOrder = is_null($displayOrder) ? 0 : ++$displayOrder;
-                $product->servertype = "ConfigServer";
-                $product->autosetup = "payment";
-                $product->configoption1 = $productDetails->id;
-                $product->configoption2 = $vars['allowChangeIP'] ? 'on' : '';
-                $product->allowqty = 1;
-                $product->save();
-
-                $pricing = new \stdClass();
-                $pricing->monthly = ceil($productDetails->priceWithDiscount('monthly') * $vars['exchangeRate'] / $vars['roundBy']) * $vars['roundBy'];
-                $pricing->quarterly = ceil($productDetails->priceWithDiscount('quarterly') * $vars['exchangeRate'] / $vars['roundBy']) * $vars['roundBy'];
-                $pricing->semiannually = ceil($productDetails->priceWithDiscount('semiannually') * $vars['exchangeRate'] / $vars['roundBy']) * $vars['roundBy'];
-                $pricing->annually = ceil($productDetails->priceWithDiscount('annually') * $vars['exchangeRate'] / $vars['roundBy']) * $vars['roundBy'];
-                $pricing->msetupfee = $pricing->qsetupfee = $pricing->ssetupfee = $pricing->asetupfee = ceil($productDetails->priceWithDiscount('setupfee') * $vars['exchangeRate'] / $vars['roundBy']) * $vars['roundBy'];
-                $pricing->biennially = $pricing->bsetupfee = -1;
-                $pricing->triennially = $pricing->tsetupfee = -1;
-        
-                $pricing->type = 'product';
-                $pricing->relid = $product->id;
-                $pricing->currency = $vars['currency'];
-                Capsule::table('tblpricing')->insert((array)$pricing);
-
-                $customfields = [
-                    'IP' => [
-                        'type' => 'text',
-                        'regexpr' => '/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\z/',
-                        'adminonly' => false,
-                        'showinvoice' => true,
-                        'showorder' => true,
-                        'required' => true,
-                    ],
-                    'licenseId' => [
-                        'type' => 'text',
-                        'adminonly' => true,
-                    ],
-                ];
-
-                foreach ($customfields as $key => $val) {
-                    $data = array(
-                        "type" => "product", 
-                        "relid" => $product->id, 
-                        "fieldname" => $key, 
-                        "fieldtype" => $val["type"],
-                        "regexpr" => isset($val["regexpr"]) ? $val["regexpr"] : '', 
-                        "adminonly" => isset($val["adminonly"]) && $val["adminonly"] ? 'on' : '', 
-                        "required" => isset($val["required"]) && $val["required"] ? 'on' : '', 
-                        "showorder" => isset($val["showorder"]) && $val["showorder"] ? 'on' : '', 
-                        "showinvoice" => isset($val["showinvoice"]) && $val["showinvoice"] ? 'on' : '',
-                    );
-                    if($val['type'] == 'dropdown'){
-                        $data['fieldoptions'] = $val['fieldoptions'];
-                    }
-                    Capsule::table('tblcustomfields')->insert($data);
-                }
+                $this->addProduct($pid, $vars['productGroup'], $vars['allowChangeIP'], $vars['productType'] == 'addon', $vars['currency'], $vars['exchangeRate'], $vars['roundBy']);
             }
             $vars['success'] = 'Products added successfully.';
         }
         return $this->renderTemplate('addProducts', $vars);
+    }
+
+
+    private function addProduct($pid, $gid, $allowChangeIP, $isAddon, $currency, $exchangeRate, $roundBy = 1){
+        $productDetails = $this->client->products()->get($pid);
+        $productType = $isAddon ? 'addon' : 'product';
+
+        if($productType == 'product'){
+            $product = Capsule::table('products')->where('servertype', 'ConfigServer')->where('configoption1', $pid)->first();;
+
+            if(!$product){
+                $product = new \WHMCS\Product\Product();
+                $product->type = "other";
+                $product->productGroupId = $gid;
+                $product->name = $productDetails->fullName;
+                $product->paymentType = 'recurring';
+                $product->showDomainOptions = false;
+                $displayOrder = \Illuminate\Database\Capsule\Manager::table("tblproducts")->where("gid", "=", $gid)->max("order");
+                $product->displayOrder = is_null($displayOrder) ? 0 : ++$displayOrder;
+                $product->servertype = "ConfigServer";
+                $product->autosetup = "payment";
+                $product->configoption1 = $productDetails->id;
+                $product->configoption2 = $allowChangeIP ? 'on' : '';
+                $product->allowqty = 1;
+                $product->save();
+            } else {
+                Capsule::table('products')->where('id', $product->id)->update([
+                    'configoption2' => $allowChangeIP ? 'on' : '',
+                ]);
+            }
+            $productId = $product->id;
+        } else {
+            $addon = Capsule::table('tbladdons as a')->where('module', 'ConfigServer')->whereRaw('(SELECT c.value FROM tblmodule_configuration c WHERE c.entity_type="addon" AND c.entity_id=a.id AND c.setting_name="configoption1")=' . $productDetails->id)->first();
+            if(!$addon){
+                $packages = Capsule::table('tblproducts')->whereNotIn('servertype', [
+                    'ConfigServer',
+                    'cpanel',
+                    'directadmin',
+                    'plesk',
+                ])->pluck('id');
+    
+                $productId = Capsule::table('tbladdons')->insertGetId([
+                    'packages' => implode(",", $packages),
+                    'name' => $productDetails->fullName,
+                    'description' => '',
+                    'billingcycle' => 'recurring',
+                    'tax' => 0,
+                    'showorder' => 1,
+                    'downloads' => '',
+                    'autoactivate' => 'payment',
+                    'suspendproduct' => 0,
+                    'welcomeemail' => 0,
+                    'type' => 'other',
+                    'module' => 'ConfigServer',
+                    'autolinkby' => '',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+                Capsule::table('tblmodule_configuration')->insert([
+                    'entity_type' => 'addon',
+                    'entity_id' => $productId,
+                    'setting_name' => 'configoption1',
+                    'friendly_name' => 'Product',
+                    'value' => $productDetails->id,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+                Capsule::table('tblmodule_configuration')->insert([
+                    'entity_type' => 'addon',
+                    'entity_id' => $productId,
+                    'setting_name' => 'configoption2',
+                    'friendly_name' => 'Allow change IP?',
+                    'value' => $allowChangeIP ? 'on' : '',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+            } else {
+                Capsule::table('tbladdons')->where('id', $addon->id)->update([
+                    'name' => $productDetails->fullName,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+                Capsule::table('tblmodule_configuration')
+                    ->where('entity_type', 'addon')
+                    ->where('entity_id', $addon->id)
+                    ->where('setting_name', 'configoption2')
+                    ->update([
+                        'friendly_name' => 'Allow change IP?',
+                        'value' => $allowChangeIP ? 'on' : '',
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                $productId = $addon->id;
+            }
+        }
+        $pricing = Capsule::table('tblpricing')->where('type', $productType)->where('relid', $productId)->first();
+        if(!$pricing){
+            $pricing = new \stdClass();
+            $pricing->monthly = ceil($productDetails->priceWithDiscount('monthly') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->quarterly = ceil($productDetails->priceWithDiscount('quarterly') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->semiannually = ceil($productDetails->priceWithDiscount('semiannually') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->annually = ceil($productDetails->priceWithDiscount('annually') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->msetupfee = $pricing->qsetupfee = $pricing->ssetupfee = $pricing->asetupfee = ceil($productDetails->priceWithDiscount('setupfee') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->biennially = $pricing->bsetupfee = -1;
+            $pricing->triennially = $pricing->tsetupfee = -1;
+    
+            $pricing->type = $productType;
+            $pricing->relid = $productId;
+            $pricing->currency = $currency;
+    
+            Capsule::table('tblpricing')->insert((array)$pricing);
+        } else {
+            Capsule::table('tblpricing')->where('id', $pricing->id)->update([
+                'monthly' => ceil($productDetails->priceWithDiscount('monthly') * $exchangeRate / $roundBy) * $roundBy,
+                'quarterly' => ceil($productDetails->priceWithDiscount('quarterly') * $exchangeRate / $roundBy) * $roundBy,
+                'semiannually' => ceil($productDetails->priceWithDiscount('semiannually') * $exchangeRate / $roundBy) * $roundBy,
+                'annually' => ceil($productDetails->priceWithDiscount('annually') * $exchangeRate / $roundBy) * $roundBy,
+                'msetupfee' => $pricing->qsetupfee = $pricing->ssetupfee = $pricing->asetupfee = ceil($productDetails->priceWithDiscount('setupfee') * $exchangeRate / $roundBy) * $roundBy,
+            ]);
+        }
+        $customfields = [
+            'IP' => [
+                'type' => 'text',
+                'regexpr' => '/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\z/',
+                'adminonly' => false,
+                'showinvoice' => true,
+                'showorder' => true,
+                'required' => true,
+            ],
+            'licenseId' => [
+                'type' => 'text',
+                'adminonly' => true,
+            ],
+        ];
+
+        foreach ($customfields as $key => $val) {
+            $field = Capsule::table('tblcustomfields')->where('type', $productType)->where('relid', $productId)->where('fieldname', $key)->first();
+            $data = array(
+                "type" => $productType, 
+                "relid" => $productId, 
+                "fieldname" => $key, 
+                "fieldtype" => $val["type"],
+                "regexpr" => isset($val["regexpr"]) ? $val["regexpr"] : '', 
+                "adminonly" => isset($val["adminonly"]) && $val["adminonly"] ? 'on' : '', 
+                "required" => isset($val["required"]) && $val["required"] ? 'on' : '', 
+                "showorder" => isset($val["showorder"]) && $val["showorder"] ? 'on' : '', 
+                "showinvoice" => isset($val["showinvoice"]) && $val["showinvoice"] ? 'on' : '',
+            );
+            if($val['type'] == 'dropdown'){
+                $data['fieldoptions'] = $val['fieldoptions'];
+            }
+            if($field){
+                Capsule::table('tblcustomfields')->where('id', $field->id)->update($data);
+            } else {
+                Capsule::table('tblcustomfields')->insert($data);
+            }
+        }
     }
 
     private function renderLicenses()

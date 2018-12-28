@@ -27,6 +27,15 @@
                 <table class="form" width="100%">
                 <tbody>
                 <tr>
+                    <td class="fieldlabel" style="font-size: 13px">Type</td>
+                    <td class="fieldarea">
+                        <select name="productType" class="form-control">
+                             <option value="addon" <?=($vars['productType'] == 'addon') ? 'selected' : '';?>>Addon</option>
+                             <option value="product" <?=($vars['productType'] == 'product') ? 'selected' : '';?>>Product</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
                     <td class="fieldlabel" style="font-size: 13px">Product Group</td>
                     <td class="fieldarea">
                         <select name="productGroup" class="form-control">
@@ -34,6 +43,7 @@
                                 <option value="<?=$item->id;?>" <?=($vars['productGroup'] == $item->id) ? 'selected' : '';?>>(<?=$item->id;?>) <?=$item->name;?></option>
                             <?php endforeach;?>
                         </select>
+                        <span>Leave empty if you are adding addon</span>
                     </td>
                 </tr>
                 <tr>

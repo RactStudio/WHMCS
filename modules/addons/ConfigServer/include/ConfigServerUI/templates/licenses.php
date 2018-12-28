@@ -60,15 +60,16 @@
     <?php if(isset($vars['error']) && !empty($vars['error'])):?>
         <div class="errorbox"><strong><span class="title">Error</span></strong><br><?=$vars['error'];?></div><br>
         <?php endif;?>
+        <div class="table-responsive">
     <table style="text-align: center;" id="sortabletbl1" class="datatable licenses" width="100%">
         <tbody>
         <tr>
             <th style="width: 75px">ID</th>
-            <th>Name</th>
-            <th>IP</th>
+            <th style="width: 150px">Name</th>
+            <th style="width: 120px">IP</th>
             <th>Hostname</th>
             <th>Cost</th>
-            <th>Status</th>
+            <th style="width: 100px">Status</th>
             <th>Due date</th>
             <th style="width: 55px">Service</th>
             <th style="width: 50px"></th>
@@ -76,7 +77,7 @@
         <?php foreach($vars['licenses'] as $license):?>
             <tr class="<?=$license->status;?>">
                 <td><?=$license->id;?></t>
-                <td class="product" title="<?=$vars['products'][$license->productId]->fullName;?>"><?=$vars['products'][$license->productId]->fullName;?></td>
+                <td style="width: 150px"  class="product" title="<?=$vars['products'][$license->productId]->fullName;?>"><?=$vars['products'][$license->productId]->fullName;?></td>
                 <td><?=$license->ip;?></td>
                 <td><?=$license->hostname;?></td>
                 <td><?=$vars['products'][$license->productId]->priceWithDiscount($license->cycle);?>$ (<?=$license->cycle;?>)</td>
@@ -96,4 +97,5 @@
         <?php endforeach;?>
         </tbody>
     </table>
+</div>
 </div>

@@ -280,11 +280,6 @@ function ConfigServer_ClientArea(array $params)
     if ($license->status == 'active' && isset($_REQUEST['modop'], $_REQUEST['a']) && $_REQUEST['modop'] == 'custom') {
         try {
             switch ($_REQUEST['a']) {
-                case 'changeOS':
-                    if(isset($_POST['newOS']) && ($response = $license->changeOS($_POST['newOS']))){
-                        $vars['success'] = 'OS was changed successfully.';
-                    }
-                    break;
                 case 'changeIP':
                     if($license->changeIP < 3 && isset($_POST['newIP']) && ($response = $license->changeIP($_POST['newIP']))){
                         $vars['success'] = 'IP address was changed successfully.';
