@@ -80,6 +80,19 @@ function ConfigServer_loadProducts(array $params)
     }
 }
 
+function ConfigServer_getServerIdByParams(array $params){
+    if(isset($params['addonId']) && $params['addonId'] > 0){
+        $version = (int)str_replace('.', null, explode("-", $params['whmcsVersion'])[0]);
+        if($version < 745){
+            $server = Capsule::table('tblservers')->where('type', 'ConfigServer')->first();
+            return $server->id;
+        }
+    }
+    if(isset($params['serveraccesshash'])){
+        return $params['serverId'];
+    }
+}
+
 function ConfigServer_getClientByParams(array $params){
     if(isset($params['addonId']) && $params['addonId'] > 0){
         $version = (int)str_replace('.', null, explode("-", $params['whmcsVersion'])[0]);
@@ -119,7 +132,7 @@ function ConfigServer_CreateAccount(array $params)
     $serviceId = $type == 'addon' ? $params['addonId'] : $params['serviceid'];
     try {
         $product = $client->products()->get($params['configoption1']);
-        if(isset($params['addonId'])){
+        if($params['addonId']>0){
             $cycle = lcfirst($addon->billingcycle);
         } else {
             $cycle = lcfirst($service->billingcycle);
@@ -174,7 +187,7 @@ function ConfigServer_Renew(array $params)
         if (!$license) {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotFound');
         }
-        if(isset($params['addonId'])){
+        if($params['addonId']>0){
             $addon = Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->first();
         } else {
             try {
@@ -183,7 +196,7 @@ function ConfigServer_Renew(array $params)
                 return 'failure';
             }
         }
-        if(isset($params['addonId'])){
+        if($params['addonId']>0){
             $cycle = lcfirst($addon->billingcycle);
         } else {
             $cycle = lcfirst($service->billingcycle);
@@ -368,6 +381,7 @@ function ConfigServer_AdminServicesTabFields(array $params)
             $t('LicenseInfo') => 'No info was found for this license.',
         ];
     }
+    $serverId = ConfigServer_getServerIdByParams($params);
     try {
         $product = $license->product();
         return [
@@ -378,7 +392,7 @@ function ConfigServer_AdminServicesTabFields(array $params)
             $t('renewDate') => $license->renewDate . ' (' . $license->remainingDays() . ' ' . $t('days') . ')',
             $t('cost') => sprintf('%s$ (%s)', $product->priceWithDiscount($license->cycle), $t($license->cycle)),
             $t('numberOfIPChanges') => $license->changeIP.'/3',
-            $t('licenseDetails') => '<a href="addonmodules.php?module=ConfigServer&serverId='.$params['serverid'].'&licenseId='.$license->id.'" target="_blank">» '.$t('licenseDetails').'</a>',
+            $t('licenseDetails') => '<a href="addonmodules.php?module=ConfigServer&serverId='.$serverId.'&licenseId='.$license->id.'" target="_blank">» '.$t('licenseDetails').'</a>',
         ];
     } catch (APIException $e) {
         return [
@@ -400,7 +414,7 @@ function ConfigServer_TerminateAccount(array $params){
         }
         $type = $params['addonId'] > 0 ? 'addon' : 'product';
         $serviceId = $type == 'addon' ? $params['addonId'] : $params['serviceid'];
-        if(isset($params['addonId'])){
+        if($params['addonId']>0){
             $relid = Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->first()->addonid;
         } else {
             $relid = $params['pid'];
@@ -431,13 +445,13 @@ function ConfigServer_SyncWithCSP(array $params){
         if (!$license) {
             return ConfigServer_getLocale($_LANG['locale'], 'licenseNotFound');
         }
-        if(!isset($params['addonId'])){
+        if($params['addonId']==0){
             /** @var $server Server */
             $params['model']->serviceProperties->save([
                 'domain' => $license->ip,
             ]);
         }
-        if(!isset($params['addonId'])){
+        if($params['addonId']>0){
             Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->update([
                 'nextduedate' => $license->renewDate
             ]);
