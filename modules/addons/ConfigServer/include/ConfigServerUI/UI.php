@@ -10,7 +10,7 @@ use ConfigServer\PHPView;
 
 class UI
 {
-    private $output = '<div class="ConfigServer">';
+    private $output = '';
     private $params;
     private $client;
     private $information;
@@ -479,6 +479,6 @@ class UI
 
     public function output()
     {
-        return $this->output . '</div>';
+        return $this->output;
     }
 }
