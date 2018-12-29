@@ -5,9 +5,9 @@
  */
 namespace ConfigServerUI;
 use WHMCS\Database\Capsule;
-use ConfigServer\Models\Licenses\License;
 use ConfigServer\APIException;
 use ConfigServer\PHPView;
+
 class UI
 {
     private $output = '<div class="ConfigServer">';
@@ -307,7 +307,7 @@ class UI
             ->first(['v.relid']);
             $addonId = 0;
             if($result){
-                $service = Capsule::table('tblhosting')->where('server', (int)$_REQUEST['serverId'])->where('id', $result->relid)->whereIn('domainstatus', ['Active', 'Suspended'])->first(['id', 'userid']);
+                $service = Capsule::table('tblhosting')/*->where('server', (int)$_REQUEST['serverId'])*/->where('id', $result->relid)->whereIn('domainstatus', ['Active', 'Suspended'])->first(['id', 'userid']);
                 if($service){
                     $client = Capsule::table('tblclients')->where('id', $service->userid)->first();
                 }
@@ -319,7 +319,7 @@ class UI
                     ->whereRaw('(SELECT COUNT(tblhostingaddons.id) FROM tblhostingaddons WHERE tblhostingaddons.id=v.relid)>0')
                     ->first(['v.relid']);
                 if($result){
-                    $service = Capsule::table('tblhostingaddons')->where('server', (int)$_REQUEST['serverId'])->where('id', $result->relid)->whereIn('status', ['Active', 'Suspended'])->first(['id', 'userid']);
+                    $service = Capsule::table('tblhostingaddons')/*->where('server', (int)$_REQUEST['serverId'])*/->where('id', $result->relid)->whereIn('status', ['Active', 'Suspended'])->first(['id', 'userid']);
                     if($service){
                         $addonId = $result->relid;
                         $client = Capsule::table('tblclients')->where('id', $service->userid)->first();
