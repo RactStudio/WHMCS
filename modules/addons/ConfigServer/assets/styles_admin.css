@@ -31,6 +31,9 @@ table.license.suspended {
 .ConfigServer .nav-tabs>li {
     float: left;
 }
+.ConfigServer .infobox {
+    text-align: left;
+}
 @media (min-width: 600px){
     table.datatable.licenses {
         table-layout: fixed;

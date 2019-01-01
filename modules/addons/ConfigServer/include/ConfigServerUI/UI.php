@@ -45,6 +45,7 @@ class UI
             }
             exit();
         }
+        
         $version = $params['version'];
         $remoteVersion = $this->getLatestVersion();
 
@@ -117,7 +118,7 @@ class UI
         $productType = $isAddon ? 'addon' : 'product';
 
         if($productType == 'product'){
-            $product = Capsule::table('products')->where('servertype', 'ConfigServer')->where('configoption1', $pid)->first();;
+            $product = Capsule::table('tblproducts')->where('servertype', 'ConfigServer')->where('configoption1', $pid)->first();;
 
             if(!$product){
                 $product = new \WHMCS\Product\Product();
@@ -135,7 +136,7 @@ class UI
                 $product->allowqty = 1;
                 $product->save();
             } else {
-                Capsule::table('products')->where('id', $product->id)->update([
+                Capsule::table('tblproducts')->where('id', $product->id)->update([
                     'configoption2' => $allowChangeIP ? 'on' : '',
                 ]);
             }
