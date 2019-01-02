@@ -82,7 +82,11 @@
                 <td><?=$license->hostname;?></td>
                 <td><?=$vars['products'][$license->productId]->priceWithDiscount($license->cycle);?>$ (<?=$license->cycle;?>)</td>
                 <td><?=$license->status;?></td>
-                <td><?=$license->renewDate;?> (<?=$license->remainingDays();?> days)</td>
+                <?php if($license->status == 'expired'):?>
+                    <td><?=$license->renewDate;?></td>
+                <?php else:?>
+                    <td><?=$license->renewDate;?> (<?=$license->remainingDays();?> days)</td>
+                <?php endif;?>
                 <td><?=$license->client;?></td>
                 <td style="height: 100%">
                     <a onclick="return confirm('Are you sure you want to extend this license?');" href="addonmodules.php?module=ConfigServer&serverId=<?=$vars['serverId'];?>&extendLicense=<?=$license->id;?>&c=<?=$vars['sessionChecker'];?>">

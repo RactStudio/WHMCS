@@ -89,7 +89,7 @@ function ConfigServer_getServerIdByParams(array $params){
         }
     }
     if(isset($params['serveraccesshash'])){
-        return $params['serverId'];
+        return $params['serverid'];
     }
 }
 

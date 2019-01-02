@@ -118,7 +118,7 @@ class UI
         $productType = $isAddon ? 'addon' : 'product';
 
         if($productType == 'product'){
-            $product = Capsule::table('tblproducts')->where('servertype', 'ConfigServer')->where('configoption1', $pid)->first();;
+            $product = Capsule::table('tblproducts')->where('servertype', 'ConfigServer')->where('configoption1', $pid)->first();
 
             if(!$product){
                 $product = new \WHMCS\Product\Product();
@@ -168,7 +168,6 @@ class UI
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s'),
                 ]);
-
                 Capsule::table('tblmodule_configuration')->insert([
                     'entity_type' => 'addon',
                     'entity_id' => $productId,
