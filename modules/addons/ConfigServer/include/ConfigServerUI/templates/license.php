@@ -171,6 +171,16 @@
                 </div>
             </div>
         </div>
+        <div style="text-align: left">
+            <h1>Installation</h1>
+            <hr/>
+            <?php foreach($vars['installationHelp'] as $item):?>
+                <h4><?=$item->os;?></h4>
+                <div class="message markdown-content">
+                <pre><code><?=$item->commands;?></code></pre>
+                </div>
+            <?php endforeach;?>
+        </div>
   </div>
 </div>
 <?php require(__DIR__ . "/copyright.php"); ?>

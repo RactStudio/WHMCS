@@ -87,6 +87,20 @@
                         <input type="number" name="roundBy" class="form-control" value="<?=$vars['roundBy'];?>">
                     </td>
                 </tr>
+                <tr>
+                    <td class="fieldlabel" style="font-size: 13px"></td>
+                    <td class="fieldarea">
+                        <input type="checkbox" name="updateExisting" <?=$vars['updateExisting'] ? 'checked' : '';?> value="1">
+                        Update existing product/addon instead of adding new ones
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fieldlabel" style="font-size: 13px"></td>
+                    <td class="fieldarea">
+                        <input type="checkbox" name="updateAddonPackages" <?=$vars['updateAddonPackages'] ? 'checked' : '';?> value="1">
+                        Update packages for addons (if addon)
+                    </td>
+                </tr>
             </tbody>
             </table>
             <div class="btn-container">
