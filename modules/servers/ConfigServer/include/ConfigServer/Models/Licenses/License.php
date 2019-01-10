@@ -53,8 +53,25 @@ class License extends Model
         return $this->product;
     }
 
-    public function remainingDays(){
-        return round((strtotime($this->renewDate) - time()) / 86400);
+    public function remainingDays($full = false){
+        $timeLeft = strtotime($this->renewDate) - time();
+        if($full){
+            if($timeLeft < 0){
+                return '-';
+            }
+            $days = floor($timeLeft / 86400);
+            $hours = floor(($timeLeft % 86400) / 3600);
+            $minutes = floor(($timeLeft % 3600) / 60);
+            $seconds = $timeLeft % 60;
+
+            return sprintf(
+                '%sd + %s:%s:%sh', $days, 
+                $hours < 10 ? '0'.$hours : $hours, 
+                $minutes < 10 ? '0'.$minutes : $minutes, 
+                $seconds < 10 ? '0'.$seconds : $seconds
+            );
+        }
+        return ceil($timeLeft / 86400);
     }
 
     /**
@@ -192,6 +209,10 @@ class License extends Model
             return $response;
         }
         return false;
+    }
+
+    public function renewDate($includeHour = false){
+        return date('Y-m-d' . ($includeHour ? ' H:i' : null), strtotime($this->renewDate));
     }
 
     public static function parse($input, ConfigServerAPIClient $APIClient)

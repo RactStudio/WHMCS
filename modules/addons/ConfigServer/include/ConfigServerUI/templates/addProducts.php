@@ -101,6 +101,13 @@
                         Update packages for addons (if addon)
                     </td>
                 </tr>
+                <tr>
+                    <td class="fieldlabel" style="font-size: 13px"></td>
+                    <td class="fieldarea">
+                        <input type="checkbox" name="updateServicesPrices" <?=$vars['updateServicesPrices'] ? 'checked' : '';?> value="1">
+                        Update services prices
+                    </td>
+                </tr>
             </tbody>
             </table>
             <div class="btn-container">

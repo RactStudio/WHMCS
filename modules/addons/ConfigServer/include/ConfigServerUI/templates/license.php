@@ -31,7 +31,15 @@
                             </tr>
                             <tr>
                                 <td>Product</td>
-                                <td><b><?=$vars['license']->product()->fullName;?></b></td>
+                                <td>
+                                <b>
+                                    <?php
+                                    $fullName = $vars['license']->product()->fullName;
+                                    $fullName = str_replace('-', '<br />', $fullName);
+                                    echo $fullName;
+                                    ?>
+                                </b>
+                                </td>
                             </tr>
                             <tr>
                                 <td>IP address</td>
@@ -55,13 +63,17 @@
                             </tr>
                             <?php if ($vars['license']->status == 'suspended' && !empty($vars['license']->suspendedReason)) :?>
                                 <tr >
-                                <td>Suspend Reason</td>
+                                <td>Suspension Reason</td>
                                 <td><b><?=$vars['license']->suspendedReason;?></b></td>
                             </tr>
                             <?php endif;?>
                             <tr>
                                 <td>Renew date</td>
-                                <td><b><?=$vars['license']->renewDate;?> (<?=$vars['license']->remainingDays();?> days)</b></td>
+                                <td><b><?=$vars['license']->renewDate();?></b></td>
+                            </tr>
+                            <tr>
+                                <td>Time left</td>
+                                <td><b><?=$vars['license']->remainingDays(true);?></b></td>
                             </tr>
                             <tr>
                                 <td>Change IP</td>

@@ -83,9 +83,9 @@
                 <td><?=$vars['products'][$license->productId]->priceWithDiscount($license->cycle);?>$ (<?=$license->cycle;?>)</td>
                 <td><?=$license->status;?></td>
                 <?php if($license->status == 'expired'):?>
-                    <td><?=$license->renewDate;?></td>
+                    <td><?=$license->renewDate();?></td>
                 <?php else:?>
-                    <td><?=$license->renewDate;?> (<?=$license->remainingDays();?> days)</td>
+                    <td><?=$license->renewDate();?> (<?=$license->remainingDays();?> days)</td>
                 <?php endif;?>
                 <td><?=$license->client;?></td>
                 <td style="height: 100%">

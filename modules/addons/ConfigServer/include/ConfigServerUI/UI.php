@@ -104,12 +104,13 @@ class UI
         $vars['productType'] = isset($_POST['productType']) && $_POST['productType'] == 'addon' ? 'addon' : 'product';
         $vars['updateExisting'] = isset($_POST['updateExisting']) && $_POST['updateExisting'] == 1;
         $vars['updateAddonPackages'] = isset($_POST['updateAddonPackages']) && $_POST['updateAddonPackages'] == 1;
+        $vars['updateServicesPrices'] = isset($_POST['updateServicesPrices']) && $_POST['updateServicesPrices'] == 1;
 
 
         if($_SERVER['REQUEST_METHOD'] === 'POST'){
             foreach($vars['product'] as $pid){
                 if(empty($pid)) continue;
-                $this->addProduct($pid, $vars['productGroup'], $vars['allowChangeIP'], $vars['productType'] == 'addon', $vars['currency'], $vars['exchangeRate'], $vars['roundBy'], $vars['updateExisting'], $vars['updateAddonPackages']);
+                $this->addProduct($pid, $vars['productGroup'], $vars['allowChangeIP'], $vars['productType'] == 'addon', $vars['currency'], $vars['exchangeRate'], $vars['roundBy'], $vars['updateExisting'], $vars['updateAddonPackages'], $vars['updateServicesPrices']);
             }
             $vars['success'] = 'Products added successfully.';
         } else {
@@ -119,7 +120,7 @@ class UI
     }
 
 
-    private function addProduct($pid, $gid, $allowChangeIP, $isAddon, $currency, $exchangeRate, $roundBy, $updateExisting, $updateAddonPackages){
+    private function addProduct($pid, $gid, $allowChangeIP, $isAddon, $currency, $exchangeRate, $roundBy, $updateExisting, $updateAddonPackages, $updateServicesPrices){
         $productDetails = $this->client->products()->get($pid);
         $productType = $isAddon ? 'addon' : 'product';
 
@@ -130,7 +131,7 @@ class UI
                     Capsule::table('tblproducts')->where('id', $prod->id)->update([
                         'configoption2' => $allowChangeIP ? 'on' : '',
                     ]);
-                    $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $prod->id, $productDetails);
+                    $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $prod->id, $productDetails, $updateServicesPrices);
                 }
             } else {
                 $product = new \WHMCS\Product\Product();
@@ -148,7 +149,7 @@ class UI
                 $product->allowqty = 1;
                 $product->save();
 
-                $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $product->id, $productDetails);
+                $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $product->id, $productDetails, $updateServicesPrices);
             }
         } else {
             $addons = Capsule::table('tbladdons as a')->where('module', 'ConfigServer')->whereRaw('(SELECT c.value FROM tblmodule_configuration c WHERE c.entity_type="addon" AND c.entity_id=a.id AND c.setting_name="configoption1")=' . $productDetails->id)->get();
@@ -184,7 +185,7 @@ class UI
                             'updated_at' => date('Y-m-d H:i:s'),
                         ]);
 
-                    $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $addon->id, $productDetails);
+                    $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $addon->id, $productDetails, $updateServicesPrices);
                 }
             } else {
                 $packages = Capsule::table('tblproducts')->whereNotIn('servertype', [
@@ -229,7 +230,7 @@ class UI
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s'),
                 ]);
-                $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $productId, $productDetails);
+                $this->handleProduct($currency, $exchangeRate, $roundBy, $productType, $productId, $productDetails, $updateServicesPrices);
             }
         }
 
@@ -468,18 +469,24 @@ class UI
      * @param $productId
      * @param $productDetails
      */
-    private function handleProduct($currency, $exchangeRate, $roundBy, $productType, $productId, Product $productDetails)
+    private function handleProduct($currency, $exchangeRate, $roundBy, $productType, $productId, Product $productDetails, $updateServicesPrices)
     {
+        $productPrices = [
+            'monthly' => ceil($productDetails->priceWithDiscount('monthly') * $exchangeRate / $roundBy) * $roundBy,
+            'quarterly' => ceil($productDetails->priceWithDiscount('quarterly') * $exchangeRate / $roundBy) * $roundBy,
+            'semiannually' => ceil($productDetails->priceWithDiscount('semiannually') * $exchangeRate / $roundBy) * $roundBy,
+            'annually' => ceil($productDetails->priceWithDiscount('annually') * $exchangeRate / $roundBy) * $roundBy,
+            'setupfee' => ceil($productDetails->priceWithDiscount('setupfee') * $exchangeRate / $roundBy) * $roundBy,
+        ];
         $pricing = Capsule::table('tblpricing')->where('type', $productType)->where('relid', $productId)->first();
         if (!$pricing) {
             $pricing = new \stdClass();
-            $pricing->monthly = ceil($productDetails->priceWithDiscount('monthly') * $exchangeRate / $roundBy) * $roundBy;
-            $pricing->quarterly = ceil($productDetails->priceWithDiscount('quarterly') * $exchangeRate / $roundBy) * $roundBy;
-            $pricing->semiannually = ceil($productDetails->priceWithDiscount('semiannually') * $exchangeRate / $roundBy) * $roundBy;
-            $pricing->annually = ceil($productDetails->priceWithDiscount('annually') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->monthly = $productPrices['monthly'];
+            $pricing->quarterly = $productPrices['quarterly'];
+            $pricing->semiannually = $productPrices['semiannually'];
+            $pricing->annually = $productPrices['annually'];
 
-
-            $pricing->msetupfee = $pricing->qsetupfee = $pricing->ssetupfee = $pricing->asetupfee = ceil($productDetails->priceWithDiscount('setupfee') * $exchangeRate / $roundBy) * $roundBy;
+            $pricing->msetupfee = $pricing->qsetupfee = $pricing->ssetupfee = $pricing->asetupfee = $productPrices['setupfee'];
             $pricing->biennially = $pricing->bsetupfee = -1;
             $pricing->triennially = $pricing->tsetupfee = -1;
 
@@ -489,19 +496,40 @@ class UI
 
             Capsule::table('tblpricing')->insert((array)$pricing);
         } else {
-            $setupFee = ceil($productDetails->priceWithDiscount('setupfee') * $exchangeRate / $roundBy) * $roundBy;
             Capsule::table('tblpricing')->where('id', $pricing->id)->update([
-                'monthly' => ceil($productDetails->priceWithDiscount('monthly') * $exchangeRate / $roundBy) * $roundBy,
-                'quarterly' => ceil($productDetails->priceWithDiscount('quarterly') * $exchangeRate / $roundBy) * $roundBy,
-                'semiannually' => ceil($productDetails->priceWithDiscount('semiannually') * $exchangeRate / $roundBy) * $roundBy,
-                'annually' => ceil($productDetails->priceWithDiscount('annually') * $exchangeRate / $roundBy) * $roundBy,
-                'msetupfee' => $setupFee,
-                'qsetupfee' => $setupFee,
-                'ssetupfee' => $setupFee,
-                'asetupfee' => $setupFee,
+                'monthly' => $productPrices['monthly'],
+                'quarterly' => $productPrices['quarterly'],
+                'semiannually' => $productPrices['semiannually'],
+                'annually' => $productPrices['annually'],
+                'msetupfee' => $productPrices['setupfee'],
+                'qsetupfee' => $productPrices['setupfee'],
+                'ssetupfee' => $productPrices['setupfee'],
+                'asetupfee' => $productPrices['setupfee'],
             ]);
         }
-
+        if($updateServicesPrices){
+            if($productType == 'product'){
+                $services = Capsule::table('tblhosting')->where('packageid', $productId)->whereNotIn('domainstatus', ['Cancelled', 'Terminated'])->get(['id', 'billingcycle']);
+                foreach($services as $service){
+                    $billingCycle = strtolower($service->billingcycle);
+                    if(in_array($billingCycle, $productPrices)){
+                        Capsule::table('tblhosting')->where('id', $service->id)->update([
+                            'amount' => $productPrices[$billingCycle],
+                        ]);
+                    }
+                }
+            } else {
+                $services = Capsule::table('tblhostingaddons')->where('addonid', $productId)->whereNotIn('status', ['Cancelled', 'Terminated'])->get(['id', 'billingcycle']);
+                foreach($services as $service){
+                    $billingCycle = strtolower($service->billingcycle);
+                    if(in_array($billingCycle, $productPrices)){
+                        Capsule::table('tblhostingaddons')->where('id', $service->id)->update([
+                            'recurring' => $productPrices[$billingCycle],
+                        ]);
+                    }
+                }
+            }
+        }
         $customfields = [
             'IP' => [
                 'type' => 'text',
