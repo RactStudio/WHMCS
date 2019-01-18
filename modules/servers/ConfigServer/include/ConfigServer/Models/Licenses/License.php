@@ -32,6 +32,7 @@ class License extends Model
     public $autoRenew;
     public $notes;
     public $suspendedReason;
+    public $lastRenew;
 
     private $product;
 
@@ -202,6 +203,12 @@ class License extends Model
      */
     public function renew()
     {
+        if(!$this->lastRenew){
+            return false;
+        }
+        if((time()-$this->lastRenew) < 90){
+            return true;
+        }
         $response = ConfigServerAPIClient::checkResponse($this->httpClient->get('licenses/' . $this->id . '/renew'));
         if (property_exists($response, 'success') && $response->success) {
             $this->renewDate = $response->renewDate;
@@ -233,6 +240,9 @@ class License extends Model
         $obj->os = $input->os;
         $obj->notes = $input->notes;
         $obj->suspendedReason = $input->suspendedReason;
+        if(property_exists($input, 'latestrenewed')){
+            $obj->lastRenew = (new \DateTime($input->latestrenewed))->getTimestamp();
+        }
         return $obj;
     }
 }

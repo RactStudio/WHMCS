@@ -255,6 +255,18 @@ function ConfigServer_UnsuspendAccount(array $params)
         }
         if ($license->status == License::STATUS_SUSPENDED) {
             if(strtotime($license->renewDate) < time()){
+                if($params['addonId']>0){
+                    $addon = Capsule::table('tblhostingaddons')->where('id', $params['addonId'])->first();
+                    $cycle = lcfirst($addon->billingcycle);
+                } else {
+                    try {
+                        $service = \WHMCS\Service\Service::findOrFail($params['serviceid']);
+                    } catch (Exception $e) {
+                        return 'failure';
+                    }
+                    $cycle = lcfirst($service->billingcycle);
+                }
+                $license->changeCycle($cycle);
                 $license->renew();
                 return 'success';
             }
