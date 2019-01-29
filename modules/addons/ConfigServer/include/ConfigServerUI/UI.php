@@ -39,8 +39,12 @@ class UI
     {
         if(isset($_REQUEST['update'])){
             if ($_REQUEST['update'] == 1) {
-                ConfigServer_update();
-                header("Location: addonmodules.php?module=ConfigServer&update=2");
+                $result = ConfigServer_update();
+                if(true === $result){
+                    header("Location: addonmodules.php?module=ConfigServer&update=2");
+                } else {
+                    header("Location: addonmodules.php?module=ConfigServer&update=2&error=" . urlencode($result));
+                }
             } else if($_REQUEST['update'] == 2){
                 header("Location: addonmodules.php?module=ConfigServer");
             }
@@ -254,7 +258,7 @@ class UI
             }
         }
         $criteria = [];
-        if (isset($_REQUEST['ip'])) {
+        if (isset($_REQUEST['ip']) && !empty($_REQUEST['ip'])) {
             $criteria['ip'] = $_REQUEST['ip'];
         }
         if (isset($_REQUEST['status'])) {

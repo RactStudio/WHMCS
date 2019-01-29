@@ -106,6 +106,7 @@ function ConfigServer_update()
         return implode(",", $result);
     }
     $zip->close();
+    return true;
 }
 
 function ConfigServer_getLocale($locale, $key = null, $parameters = [])

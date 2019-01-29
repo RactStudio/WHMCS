@@ -12,7 +12,7 @@ function ConfigServer_config()
     $configArray = array(
         "name" => "ConfigServer",
         "description" => "ConfigServer License Management module",
-        "version" => '1.2.4',
+        "version" => '1.2.5',
         "author" => '<a href="mailto:matiniamirhossein@gmail.com">Amirhossein Matini</a>',
         "language" => "english",
         "fields" => []
